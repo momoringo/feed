@@ -1,0 +1,9 @@
+
+	<div id="feedWrap">
+	{% if option.customTag %}
+	    <app post-type="{{option.timelinePostostType}}" num-count="{{option.number}}"></app>
+	{% else %}
+	    <div data-is="app" post-type="{{option.timelinePostostType}}" num-count="{{option.number}}">></div>
+	{% endif %}	
+	<p id="loding">ローディング...</p>	
+	</div>
