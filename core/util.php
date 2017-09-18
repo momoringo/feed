@@ -1,5 +1,6 @@
 <?php
 
+namespace Core;
 
 class Util
 {
@@ -7,7 +8,6 @@ class Util
 	
 	function __construct()
 	{
-
 	}
 
 	public static function getCurrentUrl() {
@@ -48,6 +48,12 @@ class Util
 
 	public function is_get() {
 		return $_SERVER["REQUEST_METHOD"] === 'GET';
+	}
+
+
+	public function is_get_file($file) {
+		return file_exists($file);
 	}	
 }
+
 

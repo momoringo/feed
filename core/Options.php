@@ -1,7 +1,8 @@
 <?php
 
+namespace Core;
 
-class Util
+class Options
 {
 
 	

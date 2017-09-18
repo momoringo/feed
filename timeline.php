@@ -1,49 +1,22 @@
 <?php
-/**
- * The bbPress Plugin
- *
- * bbPress is forum software with a twist from the creators of WordPress.
- *
- * $Id: bbpress.php 6254 2017-01-17 09:05:29Z johnjamesjacoby $
- *
- * @package bbPress
- * @subpackage Main
- */
 
 /**
- * Plugin Name: timeline
+ * Plugin Name: feed
  */
-
 
 define( 'WPMEM_DIR',  plugin_dir_url ( __FILE__ ) );
 define( 'WPMEM_PATH', plugin_dir_path( __FILE__ ) );
+define( 'THEME_PATH', get_template_directory());
 
-require_once WPMEM_PATH.'tmplInit.php';
-require_once WPMEM_PATH."shortCode/code.php";
-require_once WPMEM_PATH."core/repository.php";
-require_once WPMEM_PATH."core/util.php";
-require_once WPMEM_PATH."core/view.php";
-
-
-
-
-		$path = explode('/',str_replace('\\', '/', '/test/kk/jhf\jhg'));
-
-
-// Exit if accessed directly
-
+require_once WPMEM_PATH."core/View.php";
+require_once WPMEM_PATH."core/ShortCode/ShortCode.php";
+require_once WPMEM_PATH."core/Repository.php";
+require_once WPMEM_PATH."core/Util.php";
 
 
 defined( 'ABSPATH' ) || exit;
 
 if ( ! class_exists( 'timeline' ) ) :
-/**
- * Main bbPress Class
- *
- * "How doth the little busy bee, improve each shining hour..."
- *
- * @since 2.0.0 bbPress (r2464)
- */
 
 
 final class timeline {
@@ -55,60 +28,65 @@ final class timeline {
 	private $option;
 	private $repository;
 	private $util;
+	private $shortCode;
+
+	private $styleFile;
 
 	public function __construct() {
-
  		if (function_exists('register_activation_hook'))
         {
-            register_activation_hook(__FILE__, array($this, 'activation'));
+            register_activation_hook(__FILE__, [$this, 'activation']);
         }
 
-		$this->tmpl = TwigInit::init();
-		$this->repository = new Repository();
-		$this->util = new Util();
+		$this->view = \Core\View::init();
+		$this->repository = new \Core\Repository();
+		$this->util = new \Core\Util();
+		$this->shortCode = new \Core\ShotCode\ShotCode();
+		$this->styleFile = THEME_PATH.'/feed.css';
+		$this->initialize();
+
+
+		$this->likeController();
+		
 
 		$postName = $this->repository->getPostTypeName();
 		$name = $this->repository->getPost('book');
 	
-		add_action('admin_menu',[$this,'addAdminPluginPage']);
-
-		$u = new \shotCode\Code($this->tmpl);
-
-			
-		$u->init();
-
-
-		    remove_filter('the_content', 'wpautop');
-			remove_filter( 'the_excerpt', 'wpautop' );
-
-		$found_posts = get_posts( 'numberposts=1' );
-
-	
 		$this->setOption();
-
-
 		$this->createPstType();
-
-		$this -> addFeedScript();
-
-
-		
-
-
-
-
-		add_action( 'rest_api_init', [$this,'addEndpoitsRest'] );
-
 	}
 
+	public function activation() {
+		$this->option = [
+			'timelinePostostType' => 'post',
+			'number' => 5,
+			'customTag' => 1,
+			'length' => 20,
+			'thumbnail' => 1
+		];
+	}
 
-
+	public function addShortCode() {
+		$this->shortCode->setViews($this->view);
+		$this->shortCode->init();
+	}
 
 	//custamfeeldの調整
 
+	public function initialize() {
+		$this->removeFilter();
+		$this->addShortCode();
+		$this->addFeedScript();
+		add_action('admin_menu',[$this,'addAdminPluginPage']);
+		add_action( 'rest_api_init', [$this,'addEndpoitsRest']);
+	}
+
+	public function removeFilter() {
+		remove_filter('the_content', 'wpautop');
+		remove_filter( 'the_excerpt', 'wpautop' );
+	}
 
 	public function getCustamFeeldAddRest() {
-
 	}
 
 	public function getCustamFeeldkey() {
@@ -125,6 +103,15 @@ final class timeline {
 	        'originalExcerpt',
 	        array(
 	            'get_callback'    => [$this,'slug_get_starship'],
+	            'update_callback' => null,
+	            'schema'          => null,
+	        )
+	    );
+
+	    register_rest_field( $post_type,
+	        'likeCount',
+	        array(
+	            'get_callback'    => [$this,'get_like'],
 	            'update_callback' => null,
 	            'schema'          => null,
 	        )
@@ -165,10 +152,19 @@ final class timeline {
 	}
 
 	public function slug_get_thumb( $object, $field_name, $request ) {
-		$image_url = wp_get_attachment_image_src(get_post_thumbnail_id($object->ID), 'thumbnail');
+
+		$image_url = wp_get_attachment_image_src(get_post_thumbnail_id($object['id']), 'thumbnail');
 	    return $image_url[0];
 	}
 
+	public function get_like( $object, $field_name, $request ) {
+		$likeCount =  (int)get_post_meta( $object['id'], '_like' )[0];
+		if(empty($likeCount)) {
+			update_post_meta($object['id'],'_like',0,true);
+			$likeCount = 0;
+		}
+	    return $likeCount;
+	}
 
 	public function createEndpoitsRest() {
 
@@ -239,7 +235,6 @@ public function show_item(){
 
 
 	public function pageContlloler() {
-
 		$ID = $this->util->getUser()->ID;
 		$name = $this->util->getUser()->user_nicename;
 		$nonce = wp_create_nonce($name);
@@ -255,10 +250,7 @@ public function show_item(){
 			$getOptions['customTag'] = isset($_POST['customTag']) ? (int)$_POST['customTag'] : (int)$getOptions['customTag'];
 			$getOptions['length'] = isset($_POST['length']) ? (int)$_POST['length'] : (int)$getOptions['length'];
 			$getOptions['thumbnail'] = isset($_POST['thumbnail']) ? (int)$_POST['thumbnail'] : (int)$getOptions['thumbnail'];
-
-
 			$this->option = $getOptions;
-
 			$postObject = get_post_type_object( $getOptions['timelinePostostType'] );
 			$rest = ['show'=>$postObject->show_in_rest,'base'=>$postObject->rest_base];
 
@@ -269,7 +261,7 @@ public function show_item(){
 	
 		$Data = $this->repository->getAllPosts();
 
-		$template = $this->tmpl->loadTemplate('timelin_admin.html');
+		$template = $this->view->loadTemplate('timelin_admin.html');
 		echo $template->render([
 			'post' => $flag,
 			'nonce' => $nonce,
@@ -332,32 +324,15 @@ public function show_item(){
 	}
 
 
-	public function activation() {
-	}
-
 	private function addFeedScript() {
 
 
-		add_action('wp_print_scripts', 'add_my_scripts');
+		add_action('wp_print_scripts', [$this,'add_my_scripts']);
 		add_action( 'admin_enqueue_scripts', 'wpdocs_enqueue_custom_admin_style' );
-
-		function add_my_scripts() {
-			global $post;
-			if (!has_shortcode( $post->post_content, 'basic')) 
-				return;
-
-		    $args = array(
-		        'root' => esc_url_raw( rest_url() )
-		    );
-			wp_enqueue_style( 'Riot', plugins_url('timeline') . '/public/css/style.css', "", '20160608' );
-			wp_enqueue_script('Riot', plugins_url('timeline').'/public/riot/min/main.bundle.js', '', '3.0', true);
-			wp_localize_script( 'Riot', 'WP_API_Settings', $args );
-		}
-
 
 
 		function wpdocs_enqueue_custom_admin_style($hook_suffix) {
-	        wp_register_style( 'custom_wp_admin_css', plugins_url('timeline')  . '/public/css/admin-style.css', false, '1.0.0' );
+	        wp_register_style( 'custom_wp_admin_css', plugins_url('feed')  . '/public/css/admin-style.css', false, '1.0.0' );
 	        wp_enqueue_style( 'custom_wp_admin_css' );
 		}
 
@@ -365,14 +340,52 @@ public function show_item(){
 	}
 
 
+	public function likeController() {
+
+		add_action('wp_ajax_like', 'like');
+		add_action('wp_ajax_nopriv_like', 'like');
+		function like() {
+
+			$meta_values = get_post_meta($_POST['post_id'],'_like');
+			$count = (int)$meta_values[0];
+
+			$likeCount = [
+				'count' => ++$count,
+				'post_id' => $_POST['post_id']
+			];
+
+			update_post_meta($_POST['post_id'],'_like',$likeCount['count']);
+
+			wp_send_json($likeCount);
+		}
+	}
+
+
+	public function add_my_scripts() {
+		global $post;
+	    $args = array(
+	        'root' => esc_url_raw( rest_url() ),
+	        'likeCunt' => admin_url('admin-ajax.php')
+	    );
+		
+		if($this->util->is_get_file($this->styleFile)) {
+			$path = get_template_directory_uri().'/feed.css';
+		} else {
+			$path = plugins_url('feed') . '/public/css/style.css';
+		}
+
+	
+		wp_enqueue_style( 'Riot', $path, "", '20160608' );
+		wp_enqueue_script('Riot', plugins_url('feed').'/public/riot/min/main.bundle.js', '', '3.0', true);
+		wp_localize_script( 'Riot', 'WP_API_Settings', $args );
+	}
+
 
 	public function func($callback)
 	{
 		$args = func_get_args();
 	    echo "callback function result :" . call_user_func($callback) . PHP_EOL;
 	}
-
-
 
 
 	public function setUser() {

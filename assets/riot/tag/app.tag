@@ -11,16 +11,16 @@ import './row';
 
   <modal hide={showDetail} />
 
-
-  <div show={showDetail} class="article" each={data}>
-      <p>{title.rendered}</p>
-      <p>{originalExcerpt}</p>
-      <p if={originalThumbnail}><img src="{originalThumbnail}" /></p>
-      <p each={post_meta}>
+  <div show={showDetail} class="article num-{index}" each={d, index in　data}>
+      <p>{d.title.rendered}</p>
+      <p>{d.originalExcerpt}</p>
+      <p if={d.originalThumbnail}><img src="{d.originalThumbnail}" /></p>
+      <p each={d.post_meta}>
         <span>{meta_key}:</span>
         <span>{meta_value}</span>
       </p>
-      <button onclick={moreContents} data-id={id}>続きを見る</button>
+      <p onclick={like} data-post-id={d.id} data-index={index}>いいね！<span>{d.likeCount}</span></p>
+      <button onclick={moreContents} data-id={d.id}>続きを見る</button>
   </div>
   <p onclick={more} if={totalFlag}>もっと見る</p>
   <p if={isLoad}>ローディング...</p>
@@ -41,12 +41,8 @@ import './row';
     const count = _this.firstShow = parseInt(opts.numCount);
     const postType = opts.postType;
     const RESTURL = `${WP_API_Settings.root}wp/v2/${postType}s`;
+    const LIKEURL = WP_API_Settings.likeCunt;
 
-    this.on('mount',()=>{  
-      
-
-
-    });
 
     let url = `${RESTURL}?per_page=${_this.firstShow}`;
 
@@ -72,6 +68,23 @@ import './row';
       });
     }
 
+    AjaxPost(param,event) {
+     superagent
+       .post(param.url)
+       .type('form')
+       .send(param.data)
+       .set('Accept', 'application/json')
+       .end(function(err, res){
+         if (err || !res.ok) {
+           console.log('Oh no! error');
+         } else {
+          _this.data[event.item.index]['likeCount'] = res.body.count;
+          _this.data = [].concat(_this.data);
+          _this.update();
+         }
+       });
+    }
+
     more(){
       url = `${RESTURL}?per_page=${count}&offset=${_this.firstShow}`;
       _this.firstShow += count;
@@ -80,6 +93,18 @@ import './row';
               _this.totalFlag = false;
       }
       _this.Ajax(url);
+    }
+
+    like(event){
+      const param = {
+        url: LIKEURL,
+        data: {
+          action: 'like',
+          post_id: event.item.d.id
+        }
+      };
+      //console.log(LIKEURL);
+      _this.AjaxPost(param,event);
     }
 
     moreContents(e) {
