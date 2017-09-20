@@ -10,7 +10,7 @@ import riot from  "riot";
 
   <script>
     const _this = this;
-  const observer = this.parent.opts.observer;
+    const observer = this.parent.opts.observer;
 
     _this.metaData = opts.meta;
 

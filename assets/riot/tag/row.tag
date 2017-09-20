@@ -2,6 +2,10 @@ import riot from  "riot";
 <raw>
   <script>
 
+  	this.mixin('observer');
+
+
+  	console.log(this);
 	const parentObserble = (obj) => {
 		if(!obj.parent.opts.hasOwnProperty('observer')) {
 			return parentObserble(obj.parent);

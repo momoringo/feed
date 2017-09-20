@@ -5,7 +5,6 @@ namespace Core;
 class Util
 {
 
-	
 	function __construct()
 	{
 	}
@@ -22,13 +21,17 @@ class Util
 
 	public function getNonce($name) {
 		return wp_create_nonce( $name );
-
 	}
 
 	public function checkPassword($password) {
 		$user = $this->getUser();
 		$checked = wp_check_password( $password,$user->user_pass);
 		return $checked;
+	}
+
+	public function getOption() {
+		$options = get_option('timelineSetting');
+		return $options ? $options : $this->option;
 	}
 
 	public function getUser() {
