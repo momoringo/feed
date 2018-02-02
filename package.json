@@ -27,6 +27,8 @@
     "gulp-riot": "^1.0.6",
     "gulp-uglify": "^2.0.1",
     "immutable": "^3.8.1",
+    "intersection-observer": "^0.4.2",
+    "matter-js": "^0.13.0",
     "postcss-import": "^9.1.0",
     "postcss-nested": "^1.0.0",
     "postcss-simple-vars": "^3.0.0",
@@ -43,6 +45,7 @@
     "vinyl-source-stream": "^1.1.0"
   },
   "dependencies": {
+    "fs-extra": "^4.0.2",
     "jquery": "^2.1.4"
   }
 }

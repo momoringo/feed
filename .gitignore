@@ -2,3 +2,4 @@ node_modules/
 Twig/
 public/
 .DS_Store
+/vendor/

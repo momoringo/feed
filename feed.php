@@ -4,16 +4,20 @@
  * Plugin Name: feed
  */
 
+
+require_once "vendor/autoload.php";
 define( 'WPMEM_DIR',  plugin_dir_url ( __FILE__ ) );
 define( 'WPMEM_PATH', plugin_dir_path( __FILE__ ) );
 define( 'THEME_PATH', get_template_directory());
 
-require_once WPMEM_PATH."core/View.php";
-require_once WPMEM_PATH."core/ShortCode/ShortCode.php";
-require_once WPMEM_PATH."core/Repository.php";
-require_once WPMEM_PATH."core/Util.php";
-require_once WPMEM_PATH."core/RestOriginal.php";
-
+use Carbon\Carbon;
+use Core\View;
+use Core\Repository;
+use Core\Util;
+use Core\ShortCode\ShortCode;
+use Core\RestOriginal;
+use Core\Session;
+	
 defined( 'ABSPATH' ) || exit;
 
 if ( ! class_exists( 'timeline' ) ) :
@@ -28,6 +32,8 @@ final class timeline {
 	private $rest;
 	private $shortCode;
 	private $styleFile;
+	private $session;
+	private $carbon;
 
 	public function __construct() {
  		if (function_exists('register_activation_hook'))
@@ -35,17 +41,37 @@ final class timeline {
             register_activation_hook(__FILE__, [$this, 'activation']);
         }
 
-		$this->view = \Core\View::init();
-		$this->repository = new \Core\Repository();
-		$this->util = new \Core\Util();
-		$this->shortCode = new \Core\ShotCode\ShotCode();
-		$this->rest = new \Core\RestOriginal($this->repository,$this->util);
-		
+		$this->view = View::init();
+		$this->repository = new Repository();
+		$this->util = new Util();
+		$this->shortCode = new ShortCode();
+		$this->rest = new RestOriginal($this->repository,$this->util);
+		$GLOBALS['FORMSESSION'] = $this->session = new Session();
+
+
+
+		$this->carbon = Carbon::now();
+		//var_dump($this->session->getSession());
 		$this->initialize();
 
 		$postName = $this->repository->getPostTypeName();
 		$name = $this->repository->getPost('book');
 	
+
+
+
+
+add_action( 'get_header', 'my_setcookie');
+ 
+function my_setcookie() {
+    setcookie( 'visitedHome', 'true', time() + 60*60*24*7, '/' );
+    setcookie( 'isMobile', wp_is_mobile() ? 'true' : 'false', 0, '/' );
+}
+
+
+$id = bin2hex(openssl_random_pseudo_bytes(16));
+//var_dump($id);
+
 		$this->setOption();
 		$this->createPstType();
 	}
@@ -59,6 +85,16 @@ final class timeline {
 			'thumbnail' => 1,
 			'string' => 'いいね！'
 		];
+
+		$postwill = array(
+		     'post_name' => 'page' ,
+		     'post_title' => 'testf',
+		     'post_content' => '[basicFeed]',
+		     'post_status' => 'publish',
+		     'post_type' => 'page',
+		 );
+		wp_insert_post($postwill);
+
 	}
 
 	public function addShortCode() {
@@ -72,7 +108,18 @@ final class timeline {
 		$this->addFeedScript();
 		$this->rest->init();
 		add_action('admin_menu',[$this,'addAdminPluginPage']);
+
+		//add_filter('posts_fields',[$this,'pos']);
+		
 	}
+
+	public function pos($p) {
+		//var_dump($p);
+
+		$p = 'wp_posts.post_title,wp_posts.ID,wp_posts.post_name';
+		return $p;
+	}
+
 
 	public function removeFilter() {
 		remove_filter('the_content', 'wpautop');
@@ -96,13 +143,16 @@ final class timeline {
 		];
 	}
 
+
+
+
 	public function getOption() {
 		$options = get_option('timelineSetting');
 		return $options ? $options : $this->option;
 	}
 
 	public function addAdminPluginPage() {
-		$y = $this->util->checkPassword('passwordss');//wp_check_password( 'passwordss',$this->getUser()->user_pass);
+		$y = $this->util->checkPassword('passwordss');
 
 		$userdata = array(
 		    'first_name'    =>  '菊池',
@@ -126,7 +176,7 @@ final class timeline {
 		$ID = $this->util->getUser()->ID;
 		$name = $this->util->getUser()->user_nicename;
 		$nonce = wp_create_nonce($name);
-		$postName = $this->repository->getPostTypeName();
+		$postName = $this->repository->getFeedPost();
 		$getOptions = $this->getOption();
 		$postObject = get_post_type_object( $getOptions['timelinePostostType'] );
 		$rest = ['show'=>$postObject->show_in_rest,'base'=>$postObject->rest_base];
@@ -141,14 +191,13 @@ final class timeline {
 			$this->option = $getOptions;
 			$postObject = get_post_type_object( $getOptions['timelinePostostType'] );
 			$rest = ['show'=>$postObject->show_in_rest,'base'=>$postObject->rest_base];
-
 			$getOptions = $this->option = array_map([$this,"myhtmlspecialchars"], $this->option);
 			$flag = update_option( 'timelineSetting', $getOptions );
 		}
 
 		$Data = $this->repository->getAllPosts();
-
 		$template = $this->view->loadTemplate('timelin_admin.html');
+
 		echo $template->render([
 			'post' => $flag,
 			'nonce' => $nonce,
@@ -167,22 +216,24 @@ final class timeline {
 	    }
 	}
 
+	//feedにしてタクソノミーを入れる
+
 	public function createPstType() {
 		function codex_custom_init() {
 		  $labels = array(
-		    'name'               => 'Books',
-		    'singular_name'      => 'Book',
+		    'name'               => 'feed',
+		    'singular_name'      => 'feed',
 		    'add_new'            => '投稿',
-		    'add_new_item'       => 'Add New Book',
+		    'add_new_item'       => 'Add New feed',
 		    'edit_item'          => 'Edit Book',
-		    'new_item'           => 'New Book',
-		    'all_items'          => 'All Books',
+		    'new_item'           => 'New feed',
+		    'all_items'          => 'All feed',
 		    'view_item'          => 'View Book',
 		    'search_items'       => 'Search Books',
 		    'not_found'          => 'No books found',
 		    'not_found_in_trash' => 'No books found in Trash',
 		    'parent_item_colon'  => '',
-		    'menu_name'          => 'Books'
+		    'menu_name'          => 'feed'
 		  );
 		 
 		  $args = array(
@@ -192,17 +243,17 @@ final class timeline {
 		    'show_ui'            => true,
 		    'show_in_menu'       => true,
 		    'query_var'          => true,
-		    'rewrite'            => array( 'slug' => 'book' ),
+		    'rewrite'            => array( 'slug' => 'feed' ),
 		    'capability_type'    => 'post',
 		    'has_archive'        => true,
 		    'hierarchical'       => false,
 		    'menu_position'      => null,
 		    'supports'           => array( 'title', 'editor', 'author', 'thumbnail', 'excerpt', 'comments' ),
 		    'show_in_rest' => true,
-		    'rest_base' => 'books'
+		    'rest_base' => 'feed'
 		  );
 		 
-		  register_post_type( 'book', $args );
+		  register_post_type( 'feed', $args );
 		}
 		add_action( 'init', 'codex_custom_init' );
 
@@ -221,19 +272,20 @@ final class timeline {
 	public function add_my_scripts() {
 		global $post;
 		$this->styleFile = THEME_PATH.'/feed.css';
-	    $args = array(
+	    $args = [
 	        'root' => esc_url_raw( rest_url() ),
-	        'likeCunt' => admin_url('admin-ajax.php')
-	    );
+	        'likeCunt' => admin_url('admin-ajax.php'),
+	        'nonce' => wp_create_nonce( "favarite" )
+	    ];
 		
 		if($this->util->is_get_file($this->styleFile)) {
 			$path = get_template_directory_uri().'/feed.css';
 		} else {
-			$path = plugins_url('feed') . '/public/css/style.css';
+			$path = plugins_url('feed') . '/public/css/feed.css';
 		}
 
-		wp_enqueue_style( 'Riot', $path, "", '20160608' );
-		wp_enqueue_script('Riot', plugins_url('feed').'/public/riot/min/main.bundle.js', '', '3.0', true);
+		wp_enqueue_style( 'Riot', $path, "", $this->carbon->timestamp );
+		wp_enqueue_script('Riot', plugins_url('feed').'/public/riot/min/main.bundle.js', '', $this->carbon->timestamp, true);
 		wp_localize_script( 'Riot', 'WP_API_Settings', $args );
 	}
 

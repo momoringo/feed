@@ -1,10 +1,10 @@
 <?php
 
 
-namespace Core\ShotCode;
+namespace Core\ShortCode;
 
 
-class ShotCode
+class ShortCode
 {
 	
 	protected $View;
@@ -25,16 +25,28 @@ class ShotCode
 
 	public function init() {
 		add_shortcode('basicFeed', [$this,'addFeedShortCode']);
+		$headers = getallheaders();
+
+/*
+if ($headers['Content-Type'] !== 'application/json') { 
+    echo "ajax からのリクエストです";
+}
+
+
+if(isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH'])=='xmlhttprequest'){
+echo "ajax からのリクエストです";
+}
+*/
 	}
 
 	public function addFeedShortCode() {
 		$options = get_option('timelineSetting');
 		$template = $this->getViewTemplate($this->setting['basicFeed']);//loadTemplate($this->setting['basicFeed']);
 		if(is_page()) {
-			echo $template->render(array(
+			echo $template->render([
 			    'option' => $options,
 			    'resturl' => rest_url()
-			));
+			]);
 		}
 	}
 

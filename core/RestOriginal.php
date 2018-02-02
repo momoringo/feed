@@ -18,6 +18,7 @@ class RestOriginal
 		add_action('wp_ajax_like', [$this,'action']);
 		add_action('wp_ajax_nopriv_like', [$this,'action']);
 		add_action( 'rest_api_init', [$this,'addEndpoitsRest']);
+		$this->createEndpoitsRest();
 	}
 
 	public function addEndpoitsRest() {
@@ -73,6 +74,7 @@ class RestOriginal
 	}
 
 	public function action() {
+		check_ajax_referer('favarite');
 		$meta_values = get_post_meta($_POST['post_id'],'_like');
 		$count = (int)$meta_values[0];
 
@@ -88,7 +90,7 @@ class RestOriginal
 	public function createEndpoitsRest() {
 		add_action( 'rest_api_init', function () {
 			register_rest_route( 'custom/v0', '/show', array(
-				'methods' => 'GET',
+				'methods' => 'POST',
 				'callback' => [$this,'show_item']
 			) );
 		} );
@@ -96,11 +98,9 @@ class RestOriginal
 	}
 
 	public function show_item(){
-	  //何かしらの処理
-	  //$data = ['apple'=>'りんご', 'peach'=>'もも', 'pear'=>'なし'];
 	  $Data = $this->repository->getPost('page');
 
-	  $response = new WP_REST_Response($Data);
+	  $response = new \WP_REST_Response($Data);
 	  $response->set_status(200);
 	  $domain = (empty($_SERVER["HTTPS"]) ? "http://" : "https://") . $_SERVER["HTTP_HOST"];
 	  $response->header( 'Location', $domain );

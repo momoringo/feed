@@ -6,13 +6,16 @@ import riotify from 'riotify';
 import source from 'vinyl-source-stream';
 import uglify from "gulp-uglify";
 
-        //postCss
+//postCss
 import postcss from 'gulp-postcss';
 import nested from 'postcss-nested';
 import vars from 'postcss-simple-vars';
 import _import from 'postcss-import';
 import autoprefixer from 'autoprefixer';
 
+
+var fs = require('fs-extra');
+var rl = require('readline');
 
 gulp.task('riot', () => {
     gulp
@@ -66,6 +69,42 @@ gulp.task('riot', () => {
        .pipe(gulp.dest('./public/css') );
     });
 
+var count = [];
+    gulp.task('fs', () => {
+        //fs.copy('./core','./some');
+
+        //const content = fs.readFileSync('./css/feed.css', 'utf8');
+
+
+var readableStream = fs.createReadStream('./README.md',{bufferSize: 1});
+readableStream.setEncoding('utf8');
+
+
+var reader = rl.createInterface({ input: readableStream });
+
+reader.on("line", (data) => {
+    count.push(data);
+  
+});
+
+reader.on("close", (data) => {
+  console.log(count);
+});
+
+/*
+readableStream.on('data', function(data) {
+    count++;
+
+    let k = data.replace(/\r?\n?\s/g,"");
+
+
+var rls = rl.createInterface({'input': data, 'output': {}});
+console.log(rls);
+
+
+});
+ */    
+    });
 
 gulp.task('watch',function() {
     gulp.watch(['./assets/riot/tag/*.tag','./assets/riot/main.js'], ['riot']);

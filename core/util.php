@@ -53,7 +53,6 @@ class Util
 		return $_SERVER["REQUEST_METHOD"] === 'GET';
 	}
 
-
 	public function is_get_file($file) {
 		return file_exists($file);
 	}	
