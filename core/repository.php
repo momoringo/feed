@@ -43,22 +43,6 @@ class Repository
 				";
 		$result = $this->repository->get_results($sql);
 
-
-		 var_dump($sql);
-		 /*
-
-		$result = get_transient( 'feed_posts' );
-		if ( empty($result) ) {
-			$result = $this->repository->get_results($sql);
-			foreach ($result as $key => $value) {
-				$postObject = get_post_type_object( $value->post_type );
-				$result[$key]->show_in_rest = $postObject->show_in_rest;
-				$result[$key]->rest_base = $postObject->show_in_rest;			
-			}
-			$result = $this->createPermalink($result);
-			set_transient( 'feed_posts', $result, $this->expiration );
-		}
-		*/
 		return $result;
 	}
 	public function getPostTypeName() {

@@ -5,25 +5,19 @@ import riot from  "riot";
 
 
   <div class="meta" each={metaData}>
+        <span>{meta_key}:</span>
+        <span>{meta_value}</span>
   </div>
 
 
+
+
   <script>
-    const _this = this;
-    const observer = this.parent.opts.observer;
+ 
+  console.log(opts.metaData);
 
-    _this.metaData = opts.meta;
+  this.metaData = opts.metaData;
 
-
-    
-    this.on('mount',function(){
-    
-    });
-
-
-    observer.on('metas', function(a) {
-      console.log(a);
-    });  
   </script>
 
 </meta>

@@ -1,5 +1,4 @@
 import riot from  "riot";
-import superagent from 'superagent';
 import './row';
 
 <modal>
@@ -24,12 +23,18 @@ import './row';
     }
 
     likes(e) {
+      if(event.target.classList.contains("active")) {
+        return;
+      } else {
+        //event.target.classList.add("active");
+        //_this.active = 'active';
+      };
       const c = parseInt(_this.count) + 1;
       _this.count = c;
-      observer.trigger('ajax',{id: _this.id, index: _this.index});
+      observer.trigger('ajax',{id: _this.id, index: _this.index},e);
     }
 
-    observer.on('hoge', function(article) {
+    observer.on('openModal', (article) => {
       _this.detailTitle = article.detailTitle;
       _this.detailContent = article.detailContent;
       _this.likeStr = article.likeStr;

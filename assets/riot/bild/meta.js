@@ -1,17 +1,10 @@
   
 import riot from  "riot";
 
-riot.tag2('meta', '<div class="meta" each="{metaData}"></div>', '', '', function(opts) {
-    const _this = this;
-    const observer = this.parent.opts.observer;
+riot.tag2('meta', '<div class="meta" each="{metaData}"><span>{meta_key}:</span><span>{meta_value}</span></div>', '', '', function(opts) {
 
-    _this.metaData = opts.meta;
+  console.log(opts.metaData);
 
-    this.on('mount',function(){
+  this.metaData = opts.metaData;
 
-    });
-
-    observer.on('metas', function(a) {
-      console.log(a);
-    });
 });

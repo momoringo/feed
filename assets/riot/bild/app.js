@@ -1,51 +1,13 @@
 import riot from  "riot";
-import { createStore,bindActionCreators,combineReducers,applyMiddleware } from 'redux';
-import superagent from 'superagent';
-import Store from '../../store/store';
 import Storage from '../../js/Storage';
-
-import { createLogger } from 'redux-logger';
-import riotReduxMixin from 'riot-redux-mixin';
-import 'intersection-observer';
+import ajaxHelper from '../../js/ajaxHelper';
 import './modal';
-import './meta';
-import './row';
-riot.tag2('app', '<modal if="{showDetail}"></modal><button class="favarite-list">お気に入り記事一覧</button><div class="article num-{index}" each="{d, index in　data}"><p>{d.title.rendered}</p><p>{d.originalExcerpt.content}</p><p if="{d.originalExcerpt.thumb}"><img riot-src="{d.originalExcerpt.thumb}"></p><p each="{d.originalExcerpt.meta}"><span>{meta_key}:</span><span>{meta_value}</span></p><p onclick="{like}" data-post-id="{d.id}" data-index="{index}" class="{isActive(d.id)}">{likeStr}<span>{d.originalExcerpt.action}</span></p><button onclick="{moreContents}" data-id="{d.id}" data-count="{d.originalExcerpt.action}">続きを見る</button></div><p onclick="{more}" if="{totalFlag}">もっと見る</p><p if="{isLoad}">ローディング...</p>', '', '', function(opts) {
-var localStream;
+riot.tag2('app', '<modal if="{showDetail}"></modal><button class="favarite-list">お気に入り記事一覧</button><div class="article num-{index}" each="{d, index in　data}"><p>{d.title.rendered}</p><p>{d.originalExcerpt.content}</p><p if="{d.originalExcerpt.thumb}"><img riot-src="{d.originalExcerpt.thumb}"></p><div class="meta" each="{d.originalExcerpt.meta}"><span>{meta_key}:</span><span>{meta_value}</span></div><p onclick="{like}" data-post-id="{d.id}" data-index="{index}" class="{isActive(d.id)}">{likeStr}<span>{d.originalExcerpt.action}</span></p><button onclick="{moreContents}" data-id="{d.id}" data-count="{d.originalExcerpt.action}">続きを見る</button></div><p onclick="{more}" if="{totalFlag}">もっと見る</p><p if="{isLoad}">ローディング...</p>', '', '', function(opts) {
 
-    const loadFeed = (data) =>  {
-      return {
-        type: 'test',
-        'data': data
-      };
-    };
-
-    const formReducer = (state = {}, action) => {
-      switch (action.type) {
-        case 'test':
-          return Object.assign({}, state, {
-            data: action.data
-          });
-        default:
-          return state;
-      }
-    }
     const observer = opts.observer;
     const _this = this;
 
-    const loggers = createLogger();
-    const middle = applyMiddleware(loggers)(createStore);
-    const store = createStore(formReducer);
-
-    riot.mixin('redux', riotReduxMixin(store));
-    riot.mixin('observer',{p:opts.observer});
-
-    this.mixin('redux');
-
-    this.subscribe((state) => {
-      const d = [].concat(_this.data,state.data);
-      return { data: d }
-    });
+    riot.mixin('observer',{p:observer});
 
     _this.feedData = {
       data: [],
@@ -56,69 +18,74 @@ var localStream;
     };
 
     _this.storage = new Storage();
+    _this.ajaxHelper = new ajaxHelper();
+
     _this.data = [];
     _this.isLoad = true;
     _this.total = 0;
     _this.totalFlag = true;
     _this.showDetail = false;
     _this.likeStr = opts.likeStr;
-    _this.favorite = localStorage.getItem("f");
 
     const count = _this.firstShow = parseInt(opts.numCount);
     const postType = opts.postType;
-
     const RESTURL = `${WP_API_Settings.root}wp/v2/${postType}s`;
     const LIKEURL = WP_API_Settings.likeCunt;
     let url = `${RESTURL}?per_page=${_this.firstShow}`;
 
-    this.Ajax = function(url) {
-      superagent
-      .get(url)
-      .set('Content-Type', 'application/json')
-      .set('X-Requested-With”,”XMLHttpRequest')
-      .end((err, res) => {
-        if (err) throw err;
-        _this.total = res.headers['x-wp-total'];
-        _this.isLoad = false;
-        _this.dispatch(loadFeed(res.body));
+    this.init = function() {
+      _this.getData(url);
+      observer.on('ajax', (e,r) => {
+          _this.like(e,r);
+      });
+
+      observer.on('showlist', () => {
+        _this.showDetail = false;
+        _this.update();
+      });
+
+      observer.on('activeClick', () => {
       });
     }.bind(this)
 
-    this.isActive = function(id) {
-      let f = this.getStorage();
-      return f.indexOf(id) !== -1 ? 'active': '';
-    }.bind(this)
-    this.getStorage = function(num){
-      if( !window.localStorage ) return;
-      let key = localStorage.getItem("f");
-      return key ? JSON.parse(key) : [];
-    }.bind(this)
-    this.setStorage = function(num){
-      if( !window.localStorage ) return;
-      let k = JSON.parse(_this.favorite);
-      k.push(num);
-      localStorage.setItem("f", JSON.stringify(k));
+    this.getData = function(url) {
+      _this.ajaxHelper.getData(url,(res)=>{
+        _this.total = res.headers['x-wp-total'];
+        if(_this.firstShow >= _this.total) {
+            _this.totalFlag = false;
+        }
+        _this.isLoad = false;
+        _this.data = [].concat(_this.data,res.body);
+        _this.update();
+      });
     }.bind(this)
 
-    this.isObject = function(num){
-    }.bind(this)
-
-    this.AjaxPost = function(param,event) {
-     superagent
-       .post(param.url)
-       .type('form')
-       .send(param.data)
-       .set('Accept', 'application/json')
-       .end((err, res) => {
-         if (err || !res.ok) {
-           console.log('Oh no! error');
-         } else {
-          _this.data[event.item.index]['originalExcerpt']['action'] = res.body.count;
+    this.postData = function(param) {
+      _this.ajaxHelper.postData(param,(res)=>{
+          _this.data[param.data.post_index]['originalExcerpt']['action'] = res.body.count;
           _this.setStorage(param.data.post_id);
           _this.data = [].concat(_this.data);
-          _this.update();
-         }
-       });
+          riot.update()
+      });
+    }.bind(this)
+
+    this.like = function(obj,e){
+      const id = obj.id !== void 0 ? obj.id : obj.item.d.id;
+      const index = obj.index !== void 0 ? obj.index : obj.item.index;
+      const event = e || obj;
+
+      if(_this.isActiveTaget(event)) return;
+
+      const param = {
+        url: LIKEURL,
+        data: {
+          action: 'like',
+          post_id: id,
+          post_index: index,
+          _ajax_nonce: WP_API_Settings.nonce
+        }
+      };
+      _this.postData(param);
     }.bind(this)
 
     this.more = function(){
@@ -127,24 +94,10 @@ var localStream;
       if(_this.firstShow >= _this.total) {
           _this.totalFlag = false;
       }
-      _this.Ajax(url);
-    }.bind(this)
-
-    this.like = function(event){
-      const param = {
-        url: LIKEURL,
-        data: {
-          action: 'like',
-          post_id: event.item.d.id,
-          _ajax_nonce: WP_API_Settings.nonce
-        }
-      };
-
-      _this.AjaxPost(param,event);
+      _this.getData(url);
     }.bind(this)
 
     this.moreContents = function(e) {
-
       let detail = {};
       _this.data.forEach((i,s) => {
         if( i.id === e.item.d.id ) {
@@ -152,60 +105,35 @@ var localStream;
           detail.detailContent = i.content.rendered;
         }
       });
+
       detail.likeStr = _this.likeStr;
       detail.active = _this.isActive(e.item.d.id);
 
       detail.count = e.target.dataset.count;
       detail.id = e.item.d.id;
       detail.index = e.item.index;
-
       _this.showDetail = true;
       _this.update();
-      observer.trigger('hoge',detail);
+
+      observer.trigger('openModal',detail);
       observer.trigger('html',detail);
     }.bind(this)
 
-    _this.Ajax(url);
-
-    this.like2 = function(obj){
-      const param = {
-        url: LIKEURL,
-        data: {
-          action: 'like',
-          post_id: obj.id,
-          _ajax_nonce: WP_API_Settings.nonce
-        }
-      };
-
-      _this.AjaxPost2(param,obj.index);
+    this.isActive = function(id) {
+      let f = _this.storage.getStorage("f");
+      return f.indexOf(id) !== -1 ? 'active': '';
     }.bind(this)
 
-    this.AjaxPost2 = function(param,index) {
-     superagent
-       .post(param.url)
-       .type('form')
-       .send(param.data)
-       .set('Accept', 'application/json')
-       .end((err, res) => {
-         if (err || !res.ok) {
-           console.log('Oh no! error');
-         } else {
-          _this.data[index]['originalExcerpt']['action'] = res.body.count;
-          _this.setStorage(param.data.post_id);
-          _this.data = [].concat(_this.data);
-
-          riot.update()
-         }
-       });
+    this.isActiveTaget = function(event) {
+      return event.target.classList.contains("active");
     }.bind(this)
 
-    observer.on('ajax', function(e,r) {
-        _this.like2(e);
-    });
+    this.setStorage = function(num){
+      let k = _this.storage.getStorage("f");
+      k.push(num);
+      _this.storage.setStorage("f", k);
+    }.bind(this)
 
-    observer.on('showlist', function() {
-      _this.showDetail = false;
-      _this.update();
-    });
+    _this.init();
 
 });

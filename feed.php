@@ -48,30 +48,12 @@ final class timeline {
 		$this->rest = new RestOriginal($this->repository,$this->util);
 		$GLOBALS['FORMSESSION'] = $this->session = new Session();
 
-
-
 		$this->carbon = Carbon::now();
-		//var_dump($this->session->getSession());
 		$this->initialize();
 
 		$postName = $this->repository->getPostTypeName();
 		$name = $this->repository->getPost('book');
 	
-
-
-
-
-add_action( 'get_header', 'my_setcookie');
- 
-function my_setcookie() {
-    setcookie( 'visitedHome', 'true', time() + 60*60*24*7, '/' );
-    setcookie( 'isMobile', wp_is_mobile() ? 'true' : 'false', 0, '/' );
-}
-
-
-$id = bin2hex(openssl_random_pseudo_bytes(16));
-//var_dump($id);
-
 		$this->setOption();
 		$this->createPstType();
 	}
@@ -87,8 +69,8 @@ $id = bin2hex(openssl_random_pseudo_bytes(16));
 		];
 
 		$postwill = array(
-		     'post_name' => 'page' ,
-		     'post_title' => 'testf',
+		     'post_name' => 'feed' ,
+		     'post_title' => 'feed',
 		     'post_content' => '[basicFeed]',
 		     'post_status' => 'publish',
 		     'post_type' => 'page',
@@ -107,19 +89,8 @@ $id = bin2hex(openssl_random_pseudo_bytes(16));
 		$this->addShortCode();
 		$this->addFeedScript();
 		$this->rest->init();
-		add_action('admin_menu',[$this,'addAdminPluginPage']);
-
-		//add_filter('posts_fields',[$this,'pos']);
-		
+		add_action('admin_menu',[$this,'addAdminPluginPage']);		
 	}
-
-	public function pos($p) {
-		//var_dump($p);
-
-		$p = 'wp_posts.post_title,wp_posts.ID,wp_posts.post_name';
-		return $p;
-	}
-
 
 	public function removeFilter() {
 		remove_filter('the_content', 'wpautop');
@@ -143,33 +114,13 @@ $id = bin2hex(openssl_random_pseudo_bytes(16));
 		];
 	}
 
-
-
-
 	public function getOption() {
 		$options = get_option('timelineSetting');
 		return $options ? $options : $this->option;
 	}
 
 	public function addAdminPluginPage() {
-		$y = $this->util->checkPassword('passwordss');
-
-		$userdata = array(
-		    'first_name'    =>  '菊池',
-		    'last_name'    =>  '桃子',
-		    'user_login'  =>  'momoko',
-		    'user_email'    =>  'momoko@email.com',
-		    'role'    =>  'administrator',
-		    'user_pass'   =>  'passwordss'
-		);
-		$user_id = username_exists('momoko');//登録してあるか確認
-		if ( $user_id ) {
-		    $userdata['ID'] = $user_id;
-		    $user_id = wp_update_user( $userdata );
-		}else{
-		    $user_id = wp_insert_user( $userdata );
-		}
-		add_menu_page('timeline', 'timeline', 'activate_plugins', 'test2', [$this,'pageContlloler']);
+		add_menu_page('feed', 'feed', 'activate_plugins', 'feed', [$this,'pageContlloler']);
 	}
 
 	public function pageContlloler() {
@@ -215,8 +166,6 @@ $id = bin2hex(openssl_random_pseudo_bytes(16));
 	        return esc_html($string, ENT_QUOTES);
 	    }
 	}
-
-	//feedにしてタクソノミーを入れる
 
 	public function createPstType() {
 		function codex_custom_init() {

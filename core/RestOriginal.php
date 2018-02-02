@@ -80,7 +80,8 @@ class RestOriginal
 
 		$likeCount = [
 			'count' => ++$count,
-			'post_id' => $_POST['post_id']
+			'post_id' => $_POST['post_id'],
+			'post_index' => $_POST['post_index']
 		];
 		update_post_meta($_POST['post_id'],'_like',$likeCount['count']);
 

@@ -1,9 +1,6 @@
 import riot from  "riot";
 riot.tag2('raw', '', '', '', function(opts) {
 
-  	this.mixin('observer');
-
-  	console.log(this);
 	const parentObserble = (obj) => {
 		if(!obj.parent.opts.hasOwnProperty('observer')) {
 			return parentObserble(obj.parent);

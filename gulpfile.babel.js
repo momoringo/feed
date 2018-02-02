@@ -69,47 +69,12 @@ gulp.task('riot', () => {
        .pipe(gulp.dest('./public/css') );
     });
 
-var count = [];
-    gulp.task('fs', () => {
-        //fs.copy('./core','./some');
 
-        //const content = fs.readFileSync('./css/feed.css', 'utf8');
-
-
-var readableStream = fs.createReadStream('./README.md',{bufferSize: 1});
-readableStream.setEncoding('utf8');
-
-
-var reader = rl.createInterface({ input: readableStream });
-
-reader.on("line", (data) => {
-    count.push(data);
-  
-});
-
-reader.on("close", (data) => {
-  console.log(count);
-});
-
-/*
-readableStream.on('data', function(data) {
-    count++;
-
-    let k = data.replace(/\r?\n?\s/g,"");
-
-
-var rls = rl.createInterface({'input': data, 'output': {}});
-console.log(rls);
-
-
-});
- */    
-    });
 
 gulp.task('watch',function() {
-    gulp.watch(['./assets/riot/tag/*.tag','./assets/riot/main.js'], ['riot']);
+    gulp.watch(['./assets/riot/tag/*.tag','./assets/**/*.js'], ['riot']);
     gulp.watch(['./assets/css/*.css','./assets/css/parts/*.css'], ['css']);
-    gulp.watch(['./assets/js/*.js','./assets/js/**/*.js'], ['browserify']);
+    //gulp.watch(['./assets/js/*.js','./assets/js/**/*.js'], ['browserify']);
 });
 
 
