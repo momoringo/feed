@@ -18,6 +18,106 @@ use Core\ShortCode\ShortCode;
 use Core\RestOriginal;
 use Core\Session;
 	
+
+
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use PhpOffice\PhpSpreadsheet\Writer\Csv;
+use PhpOffice\PhpSpreadsheet\IOFactory;
+
+
+$r = IOFactory::load(WPMEM_PATH.'/world.xlsx');
+
+
+
+
+
+
+$spreadsheet = new Spreadsheet();
+$sheet = $spreadsheet->getActiveSheet();
+$sheet->setCellValue('A1', 'Hello World !');
+$sheet->setCellValue('A2', 'Hello World !28888');
+$sheet->setCellValue('D2', 'いいいいいいい');
+$sheet->setCellValue('F10', 'あああああ');
+$writer = new Csv($r);
+//$writer->save(WPMEM_PATH.'/world2.csv');
+
+
+$file_handler = fopen(WPMEM_PATH."/world2.csv", "r");
+
+
+$file = WPMEM_PATH.'people.json';
+// ファイルをオープンして既存のコンテンツを取得します
+//$current = file_get_contents($file);
+// 新しい人物をファイルに追加します
+//$current .= "John Smith\n";
+// 結果をファイルに書き出します
+$t = "";
+
+
+$arr = [];
+
+
+while($line = fgetcsv($file_handler)){
+	array_push($arr,$line);
+}
+
+
+	$t = json_encode((object)$arr);
+// test.csvを閉じます。
+
+	/*
+$arr2 = array(
+  
+  "res" => array(
+    "blogData" => array(
+      [
+      "author" => "鈴木",
+      "days" => array(
+            [
+              "day" => "01", 
+              "month" => "01", 
+              "year" => "2000"
+            ]
+        ),
+        "id" => "1", 
+        "content" => "1の内容内容内容内容内容内容内容内容内容内容内容内容", 
+        "category" => array(
+            "日記"
+        ),
+        "title" => "タイトル１"
+      ],
+      [
+      "author" => "田中", 
+            "days" => array(
+                [
+                  "day" => "02", 
+                  "month" => "01", 
+                  "year" => "2010"
+                ]
+            ),
+            "id" => "2", 
+            "content" => "2の内容内容内容内容内容内容内容内容内容内容内容内容", 
+            "category" => array(
+                "旅行"
+            ),
+            "title" => "タイトル２"
+      ]
+    )
+  )
+);
+$arr2 = json_encode($arr2);
+file_put_contents("test.json" , $arr2);
+
+*/
+
+//var_dump($t);
+fclose($file_handler);
+//echo substr(sprintf('%o', fileperms(THEME_PATH)), -4);
+
+//var_dump(fileperms(THEME_PATH));
+file_put_contents('test.json', $t);
+
 defined( 'ABSPATH' ) || exit;
 
 if ( ! class_exists( 'timeline' ) ) :

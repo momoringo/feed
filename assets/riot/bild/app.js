@@ -27,11 +27,19 @@ riot.tag2('app', '<modal if="{showDetail}"></modal><button class="favarite-list"
     _this.showDetail = false;
     _this.likeStr = opts.likeStr;
 
+    const csv = 'http://localhost/wp/test.json';
+
     const count = _this.firstShow = parseInt(opts.numCount);
     const postType = opts.postType;
     const RESTURL = `${WP_API_Settings.root}wp/v2/${postType}s`;
     const LIKEURL = WP_API_Settings.likeCunt;
     let url = `${RESTURL}?per_page=${_this.firstShow}`;
+
+      _this.ajaxHelper.getData(csv,(res)=>{
+
+               console.log(JSON.parse(res.text));
+
+      });
 
     this.init = function() {
       _this.getData(url);
